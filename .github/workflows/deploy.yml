@@ -34,7 +34,7 @@ jobs:
             docker stop karyana-app || true
             docker rm karyana-app || true
 
-            docker run -d -p 8001:8000 \
+            docker run -d -p 8000:8000 \
               --env-file /home/ec2-user/karyanaa/.env \
               --name karyana-app \
               ${{ secrets.DOCKER_USERNAME }}/karyana-app
