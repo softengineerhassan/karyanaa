@@ -1,12 +1,5 @@
-__pycache__/
+venv
+__pycache__
 *.pyc
-*.pyo
-*.pyd
-.venv/
-venv/
 .env
-.git/
-.idea/
-.vscode/
-tests/
-*.log
+.git
