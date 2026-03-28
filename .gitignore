@@ -51,6 +51,17 @@ env/
 *.env
 
 # ===========================================
+# Firebase Credentials (IMPORTANT - NEVER COMMIT!)
+# ===========================================
+**/*-firebase-adminsdk-*.json
+**/*firebase-adminsdk*.json
+**/serviceAccountKey*.json
+**/google-services.json
+**/GoogleService-Info.plist
+!**/*firebase*.example.json
+!**/serviceAccountKey.example.json
+
+# ===========================================
 # RSA Keys (IMPORTANT - NEVER COMMIT!)
 # ===========================================
 keys/*.pem
