@@ -1,0 +1,124 @@
+@echo off
+REM Zoovana Auth Service - Alembic Migration Commands
+
+echo ==========================================
+echo ZOOVANA AUTH-SERVICE ALEMBIC COMMANDS
+echo ==========================================
+
+cd /d "%~dp0"
+
+echo.
+echo Available commands:
+echo 1. alembic status     - Show current migration status
+echo 2. alembic upgrade    - Apply all pending migrations
+echo 3. alembic downgrade  - Revert one migration step
+echo 4. alembic history    - Show migration history
+echo 5. alembic current    - Show current database version
+echo 6. create migration   - Generate new migration (autogenerate)
+echo 7. exit              - Exit this script
+echo.
+
+:menu
+set /p choice="Enter your choice (1-7): "
+
+if "%choice%"=="1" goto status
+if "%choice%"=="2" goto upgrade
+if "%choice%"=="3" goto downgrade
+if "%choice%"=="4" goto history
+if "%choice%"=="5" goto current
+if "%choice%"=="6" goto create_migration
+if "%choice%"=="7" goto exit
+echo Invalid choice. Please try again.
+goto menu
+
+:status
+echo.
+echo ==========================================
+echo CURRENT MIGRATION STATUS
+echo ==========================================
+python -m alembic current
+echo.
+python -m alembic heads
+echo.
+pause
+goto menu
+
+:upgrade
+echo.
+echo ==========================================
+echo APPLYING ALL PENDING MIGRATIONS
+echo ==========================================
+echo WARNING: This will apply ALL pending migrations!
+set /p confirm="Are you sure? (y/N): "
+if /i "%confirm%"=="y" (
+    python -m alembic upgrade head
+) else (
+    echo Upgrade cancelled.
+)
+echo.
+pause
+goto menu
+
+:downgrade
+echo.
+echo ==========================================
+echo REVERTING ONE MIGRATION STEP
+echo ==========================================
+echo WARNING: This will revert the last applied migration!
+set /p confirm="Are you sure? (y/N): "
+if /i "%confirm%"=="y" (
+    python -m alembic downgrade -1
+) else (
+    echo Downgrade cancelled.
+)
+echo.
+pause
+goto menu
+
+:history
+echo.
+echo ==========================================
+echo MIGRATION HISTORY
+echo ==========================================
+python -m alembic history --verbose
+echo.
+pause
+goto menu
+
+:current
+echo.
+echo ==========================================
+echo CURRENT DATABASE VERSION
+echo ==========================================
+python -m alembic current
+echo.
+pause
+goto menu
+
+:create_migration
+echo.
+echo ==========================================
+echo CREATE NEW MIGRATION
+echo ==========================================
+set /p message="Enter migration message: "
+if "%message%"=="" (
+    echo Migration message is required.
+    pause
+    goto menu
+)
+set /p autogenerate="Use autogenerate? (y/N): "
+if /i "%autogenerate%"=="y" (
+    python -m alembic revision --autogenerate -m "%message%"
+) else (
+    python -m alembic revision -m "%message%"
+)
+echo Migration file created. Please review and edit if needed.
+echo.
+pause
+goto menu
+
+:exit
+echo.
+echo Goodbye!
+pause
+exit

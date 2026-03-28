@@ -1,0 +1,7 @@
+# RSA Keys Directory
+# This file is a placeholder to ensure the keys directory is tracked by git
+# The actual key files should NOT be committed to version control
+
+# Contents (after running scripts/generate_keys.py):
+# - private.pem: RSA private key (KEEP SECRET!)
+# - public.pem: RSA public key (can be shared)

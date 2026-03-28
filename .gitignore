@@ -1,0 +1,124 @@
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===========================================
+# Virtual Environment
+# ===========================================
+venv/
+ENV/
+env/
+.venv/
+
+# ===========================================
+# IDE
+# ===========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# ===========================================
+# Environment Variables
+# ===========================================
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
+*.env
+
+# ===========================================
+# RSA Keys (IMPORTANT - NEVER COMMIT!)
+# ===========================================
+keys/*.pem
+keys/private.pem
+keys/public.pem
+keys/*
+!keys/.gitkeep
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ===========================================
+# Logs
+# ===========================================
+logs/
+*.log
+*.log.*
+
+# ===========================================
+# Testing
+# ===========================================
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# ===========================================
+# Celery
+# ===========================================
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+
+# ===========================================
+# Database
+# ===========================================
+*.db
+*.sqlite3
+
+# ===========================================
+# Docker
+# ===========================================
+.docker/
+
+# ===========================================
+# OS Files
+# ===========================================
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
+
+# ===========================================
+# Alembic
+# ===========================================
+# Keep versions directory but ignore any temp files
+alembic/versions/*.pyc
+
+# ===========================================
+# Misc
+# ===========================================
+*.pid
+*.seed
+*.pid.lock
