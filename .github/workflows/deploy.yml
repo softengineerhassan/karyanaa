@@ -16,11 +16,12 @@ jobs:
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+      # ✅ Use unique tag (commit SHA)
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/karyana-app .
+        run: docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/karyana-app:${{ github.sha }} .
 
       - name: Push Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/karyana-app
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/karyana-app:${{ github.sha }}
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -29,12 +30,11 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/karyana-app
+            docker pull ${{ secrets.DOCKER_USERNAME }}/karyana-app:${{ github.sha }}
 
             docker stop karyana-app || true
             docker rm karyana-app || true
 
-            docker run -d -p 8000:8000 \
-              --env-file /home/ec2-user/karyanaa/.env \
-              --name karyana-app \
-              ${{ secrets.DOCKER_USERNAME }}/karyana-app
+            sudo lsof -t -i:8000 | xargs -r sudo kill -9
+
+            docker run -d -p 8000:8000 --env-file /home/ec2-user/karyanaa/.env --name karyana-app ${{ secrets.DOCKER_USERNAME }}/karyana-app:${{ github.sha }}
