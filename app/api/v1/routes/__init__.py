@@ -1,9 +1,9 @@
 from app.api.v1.routes.auth import router as auth_router
-from app.api.v1.routes.riders import router as riders_router
-from app.api.v1.routes.items import router as items_router
+from app.api.v1.routes.inventory import router as inventory_router
+from app.api.v1.routes.sales import router as sales_router
 
 __all__ = [
     "auth_router",
-    "riders_router",
-    "items_router",
+    "inventory_router",
+    "sales_router",
 ]

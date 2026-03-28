@@ -15,7 +15,7 @@ from app.api.v1.schemas.user_schema import (
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-router.get("", response_model=UserListResponse, status_code=status.HTTP_200_OK)(UsersHandler.list_users)
+router.get("", response_model=StandardResponse[UserListResponse], status_code=status.HTTP_200_OK)(UsersHandler.list_users)
 router.post("", response_model=StandardResponse[UserResponse], status_code=status.HTTP_201_CREATED)(UsersHandler.create_user)
 router.get("/{user_id}", response_model=StandardResponse[UserDetailResponse], status_code=status.HTTP_200_OK)(UsersHandler.get_user)
 router.put("/{user_id}", response_model=StandardResponse[UserResponse], status_code=status.HTTP_200_OK)(UsersHandler.update_user)

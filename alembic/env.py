@@ -127,8 +127,8 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        # ✅ Force schema always
-        connection.execute(text("SET search_path TO omnia"))
+        # Include public so extensions like PostGIS geometry type are resolvable.
+        connection.execute(text("SET search_path TO omnia, public"))
 
         # Set the target metadata schema so autogenerate includes it
         target_metadata.schema = "omnia"
