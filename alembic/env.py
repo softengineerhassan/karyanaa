@@ -127,11 +127,15 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        # Include public so extensions like PostGIS geometry type are resolvable.
-        connection.execute(text("SET search_path TO omnia, public"))
+        # Ensure app schema exists, then resolve app objects from karyanaa first.
+        connection.execute(text("CREATE SCHEMA IF NOT EXISTS karyanaa"))
+        connection.execute(text("SET search_path TO karyanaa, public"))
+        # SQLAlchemy 2 opens an implicit transaction for the statements above.
+        # Commit it so Alembic's own migration transaction is the one that controls DDL.
+        connection.commit()
 
-        # Set the target metadata schema so autogenerate includes it
-        target_metadata.schema = "omnia"
+        # Set the target metadata schema so autogenerate includes it.
+        target_metadata.schema = "karyanaa"
 
         def include_object(object, name, type_, reflected, compare_to):
             # Ignore system tables or tables not in our target schemas
@@ -144,7 +148,7 @@ def run_migrations_online():
             target_metadata=target_metadata,
             compare_type=True,
             include_schemas=True,
-            version_table_schema="omnia",
+            version_table_schema="karyanaa",
             include_object=include_object,
         )
 
