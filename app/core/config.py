@@ -40,16 +40,15 @@ class Settings(BaseSettings):
     KAFKA_ENABLED: bool = Field(default=False)
 
     # CORS
-    CORS_ORIGINS: str = Field(default="*")
-    CORS_ALLOW_CREDENTIALS: bool = Field(default=True)
+    CORS_ORIGINS: str = Field(default="http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://13.236.146.72:5173")
+    CORS_ALLOW_CREDENTIALS: bool = Field(default=False)
     CORS_ALLOW_METHODS: List[str] = Field(default_factory=lambda: ["*"])
     CORS_ALLOW_HEADERS: List[str] = Field(default_factory=lambda: ["*"])
 
     @property
     def CORS_ORIGINS_LIST(self) -> List[str]:
-        if self.CORS_ORIGINS.strip() == "*":
-            return ["*"]
-        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+        origins = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+        return origins or ["http://localhost:5173"]
     
     
 

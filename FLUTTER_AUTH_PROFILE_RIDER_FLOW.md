@@ -1,4 +1,4 @@
-# Flutter Integration Guide: Authentication, Update Profile, and Rider Profile
+# Flutter Integration Guide: Authentication, Update Profile, Rider Profile, and Rider Purchase Items
 
 This document is aligned with the current backend implementation in this repository.
 
@@ -105,19 +105,7 @@ Response data fields:
   - last_login_at
   - profile_picture_url
 
-### 2.3 Refresh Token
-Endpoint:
-- POST /auth/refresh
-
-Request body:
-- refresh_token: string
-
-Response data:
-- access_token
-- token_type
-- expires_in
-
-### 2.4 Logout
+### 2.3 Logout
 Endpoint:
 - POST /auth/logout
 
@@ -125,7 +113,7 @@ Request body:
 - refresh_token: string, optional
 - revoke_all: boolean, default false
 
-### 2.5 Get Current User
+### 2.4 Get Current User
 Endpoint:
 - GET /auth/me
 Headers:
@@ -298,22 +286,139 @@ Rider response fields:
 - created_at
 - updated_at
 
-## 7) Flutter Implementation Plan
+## 7) Rider Purchase Item APIs (Owner Scoped)
+
+All rider purchase item endpoints require login token and are scoped to current logged-in user.
+
+Route prefix:
+- /rider-purchase-items
+
+### 7.1 Create Rider Purchase Item
+Endpoint:
+- POST /rider-purchase-items
+
+Request body:
+- rider_profile_id: UUID, required
+- item_name: string, required, min 1, max 255
+- item_code: string, optional, max 80
+- barcode: string, optional, max 120
+- category: string, optional, max 150
+- brand: string, optional, max 120
+- quantity: decimal, required, > 0, up to 3 decimal places
+- unit: string, optional, max 50
+- unit_size: decimal, optional, > 0, up to 3 decimal places
+- unit_price: decimal, required, > 0, up to 2 decimal places
+- cost_price: decimal, optional, >= 0, up to 2 decimal places
+- total_price: decimal, optional, >= 0, up to 2 decimal places
+- purchase_date: date, required (YYYY-MM-DD)
+- expiry_date: date, optional
+- batch_number: string, optional, max 100
+- supplier_name: string, optional, max 150
+- supplier_contact: string, optional, max 30
+- status: string, optional, default delivered, max 30
+- payment_status: string, optional, default paid, max 30
+- notes: string, optional
+- created_by: UUID, optional
+
+Behavior:
+- rider_profile_id must belong to current logged-in owner user.
+- If total_price is not provided, backend auto-calculates total from quantity * unit_price.
+- On success, backend sends invoice email to rider email if rider has an email.
+
+### 7.2 List Rider Purchase Items
+Endpoint:
+- GET /rider-purchase-items
+
+Optional query params:
+- rider_profile_id: UUID
+
+Behavior:
+- If rider_profile_id is provided, backend verifies that rider belongs to current user.
+
+### 7.3 Get Rider Purchase Item by ID
+Endpoint:
+- GET /rider-purchase-items/{item_id}
+
+Returns 404 if item does not belong to current user or does not exist.
+
+### 7.4 Update Rider Purchase Item
+Endpoint:
+- PUT /rider-purchase-items/{item_id}
+
+Request body fields (all optional):
+- rider_profile_id
+- item_name
+- item_code
+- barcode
+- category
+- brand
+- quantity
+- unit
+- unit_size
+- unit_price
+- cost_price
+- total_price
+- purchase_date
+- expiry_date
+- batch_number
+- supplier_name
+- supplier_contact
+- status
+- payment_status
+- notes
+- created_by
+
+Behavior:
+- If quantity/unit_price changes, total is recalculated unless total_price is explicitly provided.
+- If rider_profile_id is updated, backend validates ownership.
+
+### 7.5 Delete Rider Purchase Item
+Endpoint:
+- DELETE /rider-purchase-items/{item_id}
+
+Soft delete behavior.
+
+Rider purchase item response fields:
+- id
+- owner_user_id
+- rider_profile_id
+- item_name
+- item_code
+- barcode
+- category
+- brand
+- quantity
+- unit
+- unit_size
+- unit_price
+- cost_price
+- total_amount
+- total_price
+- purchase_date
+- expiry_date
+- batch_number
+- supplier_name
+- supplier_contact
+- status
+- payment_status
+- notes
+- created_by
+- created_at
+- updated_at
+
+## 8) Flutter Implementation Plan
 
 ### 7.1 Token Storage
 Use secure storage for:
 - accessToken
-- refreshToken
 - employeeId (optional helper for forgot-password flow)
 
 ### 7.2 Dio Interceptor
 - Attach Authorization header if access token exists.
 - On 401 from protected APIs:
-  - call POST /auth/refresh with refresh token
-  - retry original request once with new access token
-  - if refresh fails, force logout and route to login
+  - force logout and route to login
 
-### 7.3 Recommended Screen Flow
+### 8.3 Recommended Screen Flow
 1. Register screen
 2. Login screen
 3. Profile setup/update screen (email required)
@@ -321,29 +426,30 @@ Use secure storage for:
 5. Home
 6. Forgot password flow (employee_id -> OTP -> reset token -> new password)
 7. Rider list / create / edit screens
+8. Rider purchase item list / create / edit screens
 
-### 7.4 Frontend Guard Rules
+### 8.4 Frontend Guard Rules
 Apply these in Flutter UI:
 - Block forgot-password/change-password CTA if user profile email is missing or not verified.
 - After successful PATCH /auth/me/profile with changed email:
   - show message: verification code sent
   - navigate user to OTP verify screen
 
-### 7.5 Suggested Dart Models
+### 8.5 Suggested Dart Models
 Build models around these server contracts:
 - StandardResponse<T>
 - LoginResponse
 - RegisterResponse
 - CurrentUserResponse
 - RiderProfileResponse
+- RiderPurchaseItemResponse
 - VerifyResetOtpResponse with reset_token
 
-## 8) Ready-to-Use API Checklist for Flutter Team
+## 9) Ready-to-Use API Checklist for Flutter Team
 
 Authentication:
 - POST /auth/register
 - POST /auth/login
-- POST /auth/refresh
 - POST /auth/logout
 - GET /auth/me
 - PATCH /auth/me/profile
@@ -360,5 +466,12 @@ Riders:
 - GET /riders/{rider_id}
 - PUT /riders/{rider_id}
 - DELETE /riders/{rider_id}
+
+Rider Purchase Items:
+- POST /rider-purchase-items
+- GET /rider-purchase-items
+- GET /rider-purchase-items/{item_id}
+- PUT /rider-purchase-items/{item_id}
+- DELETE /rider-purchase-items/{item_id}
 
 If you want, I can generate a second Markdown file with exact Flutter Dio service classes and request/response Dart model classes matching these fields one-to-one.

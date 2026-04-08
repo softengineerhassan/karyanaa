@@ -4,11 +4,16 @@ from app.core.config import settings
 from app.core.logging_config import get_logger
 logger = get_logger(__name__)
 
+
+def _frontend_origin() -> str:
+    origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
+    return origins[0] if origins else "http://localhost:5173"
+
 @celery_app.task(name='app.workers.email_tasks.send_verification_email', bind=True, max_retries=3)
 def send_verification_email(self, user_id: str, email: str, verification_token: str, full_name: Optional[str]=None) -> Dict:
     try:
         logger.info(f'Sending verification email', extra={'user_id': user_id, 'email': email})
-        verification_url = f'{settings.CORS_ORIGINS[0]}/verify-email?token={verification_token}'
+        verification_url = f'{_frontend_origin()}/verify-email?token={verification_token}'
         logger.info(f'Verification email would be sent', extra={'user_id': user_id, 'email': email, 'verification_url': verification_url})
         return {'status': 'success', 'user_id': user_id, 'email': email}
     except Exception as exc:
@@ -19,7 +24,7 @@ def send_verification_email(self, user_id: str, email: str, verification_token: 
 def send_password_reset_email(self, user_id: str, email: str, reset_token: str, full_name: Optional[str]=None) -> Dict:
     try:
         logger.info(f'Sending password reset email', extra={'user_id': user_id, 'email': email})
-        reset_url = f'{settings.CORS_ORIGINS[0]}/reset-password?token={reset_token}'
+        reset_url = f'{_frontend_origin()}/reset-password?token={reset_token}'
         logger.info(f'Password reset email would be sent', extra={'user_id': user_id, 'email': email, 'reset_url': reset_url})
         return {'status': 'success', 'user_id': user_id, 'email': email}
     except Exception as exc:
