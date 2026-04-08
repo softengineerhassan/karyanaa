@@ -37,6 +37,14 @@ from app.api.v1.schemas.auth_schema import (
     ActiveSessionsResponse,
 )
 
+from app.api.v1.schemas.dashboard_schema import (
+    DashboardMetric,
+    DashboardTrendPoint,
+    DashboardRecentSale,
+    DashboardLowStockItem,
+    DashboardSummaryResponse,
+)
+
 
 __all__ = [
     # Common schemas
@@ -74,4 +82,11 @@ __all__ = [
     "JWKSResponse",
     "ActiveSessionSchema",
     "ActiveSessionsResponse",
+
+    # Dashboard schemas
+    "DashboardMetric",
+    "DashboardTrendPoint",
+    "DashboardRecentSale",
+    "DashboardLowStockItem",
+    "DashboardSummaryResponse",
 ]
