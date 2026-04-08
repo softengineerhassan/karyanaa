@@ -27,8 +27,7 @@ from app.utils.exceptions import (
     UserLockedError,
     UserAlreadyExistsError,
     InvalidTokenError,
-    ExpiredTokenError,
-    EmailNotVerifiedError
+    ExpiredTokenError
 )
 
 class AuthActions:
@@ -53,7 +52,7 @@ class AuthActions:
                 data=response_data,
                 message="Login successful"
             )
-        except (InvalidCredentialsError, UserInactiveError, UserLockedError, EmailNotVerifiedError) as e:
+        except (InvalidCredentialsError, UserInactiveError, UserLockedError) as e:
             # Re-raise to let the global executive handler in main.py handle it (to include 'details')
             raise e
         except Exception as e:
@@ -181,7 +180,7 @@ class AuthActions:
         from app.services.auth_service import AuthService
         auth_service = AuthService(session)
         try:
-            await auth_service.request_password_reset(data.employee_id)
+            await auth_service.request_password_reset(str(data.email))
             return success_response(message="If an account exists, a reset code has been sent.")
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -191,7 +190,7 @@ class AuthActions:
         from app.services.auth_service import AuthService
         auth_service = AuthService(session)
         try:
-            token = await auth_service.verify_reset_otp(data.employee_id, data.code)
+            token = await auth_service.verify_reset_otp(str(data.email), data.code)
             return success_response(
                 data=ResetOTPResponse(reset_token=token),
                 message="Reset code verified successfully"

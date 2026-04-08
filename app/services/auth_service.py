@@ -22,8 +22,7 @@ from app.utils.exceptions import (
     UserLockedError,
     UserAlreadyExistsError,
     InvalidTokenError,
-    ExpiredTokenError,
-    EmailNotVerifiedError
+    ExpiredTokenError
 )
 
 class AuthService:
@@ -73,11 +72,6 @@ class AuthService:
 
         if not user.is_active:
             raise UserInactiveError()
-
-        if self._has_profile_email(user) and not user.is_email_verified:
-            # Automatically resend verification code
-            await self.resend_verification_otp(user.email)
-            raise EmailNotVerifiedError("Email not verified. A new verification code has been sent to your email.")
 
         self.user_repo.reset_failed_login(user.id)
         
@@ -241,9 +235,9 @@ class AuthService:
         await self._generate_and_send_otp(user)
         return True
 
-    async def request_password_reset(self, employee_id: str) -> bool:
+    async def request_password_reset(self, email: str) -> bool:
         """Step 1: Request password reset and send OTP"""
-        user = self.user_repo.get_by_employee_id(employee_id)
+        user = self.user_repo.get_by_email(email)
         if not user:
             # Mask user existence
             return True
@@ -251,12 +245,15 @@ class AuthService:
         if not self._has_profile_email(user):
             raise ValueError("Please update your profile and add the email address first")
 
+        if not user.is_email_verified:
+            raise ValueError("Email is not verified. Please verify your email before using forgot password")
+
         await self._generate_and_send_otp(user, purpose="password_reset")
         return True
 
-    async def verify_reset_otp(self, employee_id: str, code: str) -> str:
+    async def verify_reset_otp(self, email: str, code: str) -> str:
         """Step 2: Verify reset OTP and return a reset token"""
-        user = self.user_repo.get_by_employee_id(employee_id)
+        user = self.user_repo.get_by_email(email)
         if not user:
             raise InvalidCredentialsError("Invalid or expired reset code")
 

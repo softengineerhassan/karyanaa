@@ -164,25 +164,18 @@ class ResendVerificationRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    employee_id: str = Field(..., max_length=10, description="Employee ID")
+    email: EmailStr = Field(..., description="Verified user email")
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "employee_id": "AB1#X9"
+                "email": "user@example.com"
             }
         }
     )
 
-    @field_validator("employee_id")
-    @classmethod
-    def validate_employee_id(cls, v: str) -> str:
-        if len(v) > 10:
-            raise ValueError("Employee ID must be at most 10 characters")
-        return v
-
 class VerifyResetOTPRequest(BaseModel):
-    employee_id: str = Field(..., max_length=10, description="Employee ID")
+    email: EmailStr = Field(..., description="Verified user email")
     code: str = Field(..., min_length=4, max_length=4, description="4-digit OTP code")
 
 class ResetOTPResponse(BaseModel):
