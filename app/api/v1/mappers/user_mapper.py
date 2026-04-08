@@ -19,6 +19,18 @@ def build_profile_picture_url(key: Optional[str]) -> Optional[str]:
     )
 
 
+def normalize_public_email(user: User) -> str:
+    email = (user.email or "").strip()
+    if not email:
+        return f"user-{user.id}@employee.karyanaa.app"
+
+    # Keep legacy placeholder domains from breaking EmailStr validation in API responses.
+    if email.endswith("@employee.local") or email.endswith("@employee.localhost"):
+        return f"user-{user.id}@employee.karyanaa.app"
+
+    return email
+
+
 def _calculate_loyalty_stats(bookings_count: int) -> dict:
     is_gold = 10 < bookings_count < 20
     is_vip = bookings_count >= 30
@@ -48,7 +60,8 @@ def map_user_to_user_response(user: User, bookings_count: int = 0) -> "UserRespo
     
     return UserResponse(
         id=user.id,
-        email=user.email,
+        employee_id=user.employee_id,
+        email=normalize_public_email(user),
         full_name=user.full_name,
         phone_number=user.phone_number,
         location=user.location,
@@ -75,7 +88,8 @@ def map_user_to_user_detail_response(user: User, bookings_count: int = 0) -> "Us
     loyalty = _calculate_loyalty_stats(bookings_count)
     return UserDetailResponse(
         id=user.id,
-        email=user.email,
+        employee_id=user.employee_id,
+        email=normalize_public_email(user),
         full_name=user.full_name,
         phone_number=user.phone_number,
         location=user.location,
@@ -110,7 +124,8 @@ def map_user_to_user_detail_response(user: User, bookings_count: int = 0) -> "Us
 def map_user_to_public_response(user: User, bookings_count: int = 0, session=None) -> UserPublicResponse:
     return UserPublicResponse(
         id=user.id,
-        email=user.email,
+        employee_id=user.employee_id,
+        email=normalize_public_email(user),
         full_name=user.full_name,
         phone_number=user.phone_number,
         is_active=user.is_active,
@@ -137,14 +152,19 @@ def map_user_to_current_user_response(user: User, bookings_count: int = 0, sessi
     time_active_str = "0h"
 
     if session is not None:
-        from app.repos.venue_repository import VenueRepository
+        # This repository is optional in trimmed deployments; keep profile APIs functional without it.
+        try:
+            from app.repos.venue_repository import VenueRepository
 
-        # Keep only high-level stats for auth profile response.
-        actions_taken = 0
-        
-        admin_stats = VenueRepository(session).get_admin_stats(user.id)
-        approvals = admin_stats["approvals"]
-        revenue_impact = admin_stats["revenue_impact"]
+            # Keep only high-level stats for auth profile response.
+            actions_taken = 0
+
+            admin_stats = VenueRepository(session).get_admin_stats(user.id)
+            approvals = admin_stats["approvals"]
+            revenue_impact = admin_stats["revenue_impact"]
+        except Exception:
+            approvals = 0
+            revenue_impact = 0.0
 
     # Calculate Time Active
     if user.joined_date or user.created_at:
@@ -161,7 +181,8 @@ def map_user_to_current_user_response(user: User, bookings_count: int = 0, sessi
 
     return CurrentUserResponse(
         id=user.id,
-        email=user.email,
+        employee_id=user.employee_id,
+        email=normalize_public_email(user),
         full_name=user.full_name,
         phone_number=user.phone_number,
         is_active=user.is_active,

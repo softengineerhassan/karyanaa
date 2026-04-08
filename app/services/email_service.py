@@ -1,5 +1,5 @@
 from email.message import EmailMessage
-from typing import Optional
+from typing import Optional, Sequence, Tuple
 
 import aiosmtplib
 
@@ -32,7 +32,32 @@ class EmailService:
         await EmailService._send_email(email, subject, body)
 
     @staticmethod
-    async def _send_email(to_email: str, subject: str, body: str) -> None:
+    async def send_rider_purchase_invoice_email(
+        email: str,
+        rider_name: str,
+        item_name: str,
+        pdf_bytes: bytes,
+        filename: str,
+    ) -> None:
+        subject = f"{settings.APP_NAME} rider purchase invoice"
+        body = (
+            f"Hello {rider_name},\n\n"
+            f"Please find attached the invoice for your item purchase: {item_name}.\n"
+        )
+        await EmailService._send_email(
+            email,
+            subject,
+            body,
+            attachments=[(filename, pdf_bytes, "application", "pdf")],
+        )
+
+    @staticmethod
+    async def _send_email(
+        to_email: str,
+        subject: str,
+        body: str,
+        attachments: Optional[Sequence[Tuple[str, bytes, str, str]]] = None,
+    ) -> None:
         if not settings.SMTP_HOST:
             logger.warning(
                 "SMTP_HOST is not configured; skipping email send",
@@ -46,6 +71,10 @@ class EmailService:
         message["To"] = to_email
         message["Subject"] = subject
         message.set_content(body)
+
+        for attachment in attachments or []:
+            filename, content, maintype, subtype = attachment
+            message.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
 
         try:
             await aiosmtplib.send(

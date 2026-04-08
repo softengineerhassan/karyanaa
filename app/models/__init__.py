@@ -21,6 +21,8 @@ from app.models.sales import (
     SalePayment,
     SaleItemBatchAllocation,
 )
+from app.models.rider_profile import RiderProfile
+from app.models.rider_purchase_item import RiderPurchaseItem
 
 __all__ = [
     "User",
@@ -42,4 +44,6 @@ __all__ = [
     "SaleItem",
     "SalePayment",
     "SaleItemBatchAllocation",
+    "RiderProfile",
+    "RiderPurchaseItem",
 ]

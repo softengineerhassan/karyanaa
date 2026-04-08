@@ -21,6 +21,7 @@ router.get("/{user_id}", response_model=StandardResponse[UserDetailResponse], st
 router.put("/{user_id}", response_model=StandardResponse[UserResponse], status_code=status.HTTP_200_OK)(UsersHandler.update_user)
 router.delete("/{user_id}", response_model=StandardResponse[None], status_code=status.HTTP_200_OK)(UsersHandler.delete_user)
 router.put("/me/profile", response_model=StandardResponse[CurrentUserResponse], status_code=status.HTTP_200_OK, summary="Update own profile", description="Update profile information. Supporting file upload for profile picture.")(UsersHandler.update_own_profile)
+router.patch("/me/profile", response_model=StandardResponse[CurrentUserResponse], status_code=status.HTTP_200_OK, summary="Update own profile (JSON)", description="Update profile fields using JSON payload.")(UsersHandler.update_own_profile_json)
 router.post("/me/profile-picture", response_model=StandardResponse[CurrentUserResponse], status_code=status.HTTP_200_OK, summary="Upload profile picture", description="Dedicated endpoint to upload/update profile picture.")(UsersHandler.upload_profile_picture)
 
 

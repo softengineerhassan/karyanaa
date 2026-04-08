@@ -63,6 +63,7 @@ class UserUpdateRequest(BaseModel):
 
 class UserResponse(BaseModel):
     id: UUID = Field(..., description="User ID")
+    employee_id: Optional[str] = Field(None, description="Employee ID")
     email: str = Field(..., description="User email")
     full_name: Optional[str] = Field(None, description="User full name")
     phone_number: Optional[str] = Field(None, description="User phone number")
@@ -140,6 +141,7 @@ class UserFilterParams(BaseModel):
 
 class UserProfileUpdateRequest(BaseModel):
 
+    email: Optional[EmailStr] = Field(None, description="User email address")
     full_name: Optional[str] = Field(None, min_length=2, max_length=255)
     phone_number: Optional[str] = Field(None, max_length=20)
     location: Optional[str] = Field(None, max_length=255)

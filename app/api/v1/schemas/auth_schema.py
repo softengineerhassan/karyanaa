@@ -4,6 +4,7 @@ from datetime import datetime, date
 from uuid import UUID
 
 from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
+import re
 
 from app.api.v1.schemas.common_schema import BaseSchema
 
@@ -17,8 +18,7 @@ class RecentActivity(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    
-    email: EmailStr = Field(..., description="User email address")
+    employee_id: str = Field(..., max_length=10, description="Employee ID")
     password: str = Field(..., min_length=1, description="User password")
     device_id: Optional[str] = Field(None, description="Device identifier for tracking")
     fcm_token: Optional[str] = Field(None, description="Firebase Cloud Messaging token for push notifications")
@@ -26,13 +26,26 @@ class LoginRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "email": "user@example.com",
+                "employee_id": "AB1#X9",
                 "password": "SecurePass123!",
                 "device_id": "mobile-app-ios-v1.0",
                 "fcm_token": "YOUR_FCM_TOKEN"
             }
         }
     )
+
+    @field_validator("employee_id")
+    @classmethod
+    def validate_employee_id(cls, v: str) -> str:
+        if len(v) > 10:
+            raise ValueError("Employee ID must be at most 10 characters")
+        if not re.search(r"[A-Za-z]", v):
+            raise ValueError("Employee ID must include at least one letter")
+        if not re.search(r"\d", v):
+            raise ValueError("Employee ID must include at least one digit")
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError("Employee ID must include at least one special character")
+        return v
 
 
 class TokenResponse(BaseModel):
@@ -74,8 +87,7 @@ class LogoutRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    
-    email: EmailStr = Field(..., description="User email address")
+    employee_id: str = Field(..., max_length=10, description="Employee ID")
     password: str = Field(..., min_length=8, description="User password")
     full_name: str = Field(..., min_length=2, max_length=255, description="User full name")
     phone_number: Optional[str] = Field(None, max_length=20, description="User phone number")
@@ -86,11 +98,24 @@ class RegisterRequest(BaseModel):
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
         return v
+
+    @field_validator("employee_id")
+    @classmethod
+    def validate_employee_id(cls, v: str) -> str:
+        if len(v) > 10:
+            raise ValueError("Employee ID must be at most 10 characters")
+        if not re.search(r"[A-Za-z]", v):
+            raise ValueError("Employee ID must include at least one letter")
+        if not re.search(r"\d", v):
+            raise ValueError("Employee ID must include at least one digit")
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError("Employee ID must include at least one special character")
+        return v
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "email": "newuser@example.com",
+                "employee_id": "AB1#X9",
                 "password": "SecurePass123!",
                 "full_name": "John Doe",
                 "phone_number": "+1234567890"
@@ -102,7 +127,8 @@ class RegisterRequest(BaseModel):
 class RegisterResponse(BaseModel):
     
     user_id: UUID = Field(..., description="User ID")
-    email: EmailStr = Field(..., description="User email")
+    employee_id: str = Field(..., description="Employee ID")
+    email: Optional[EmailStr] = Field(None, description="User email")
     full_name: str = Field(..., description="User full name")
     is_email_verified: bool = Field(False, description="Email verification status")
     message: str = Field(..., description="Registration success message")
@@ -138,19 +164,25 @@ class ResendVerificationRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    
-    email: EmailStr = Field(..., description="User email address")
+    employee_id: str = Field(..., max_length=10, description="Employee ID")
     
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "email": "user@example.com"
+                "employee_id": "AB1#X9"
             }
         }
     )
 
+    @field_validator("employee_id")
+    @classmethod
+    def validate_employee_id(cls, v: str) -> str:
+        if len(v) > 10:
+            raise ValueError("Employee ID must be at most 10 characters")
+        return v
+
 class VerifyResetOTPRequest(BaseModel):
-    email: EmailStr = Field(..., description="User email address")
+    employee_id: str = Field(..., max_length=10, description="Employee ID")
     code: str = Field(..., min_length=4, max_length=4, description="4-digit OTP code")
 
 class ResetOTPResponse(BaseModel):
@@ -192,6 +224,15 @@ class ChangePasswordRequest(BaseModel):
         return v
 
 
+class UpdateOwnProfileRequest(BaseModel):
+    email: Optional[EmailStr] = Field(None, description="User email address")
+    full_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    phone_number: Optional[str] = Field(None, max_length=20)
+    location: Optional[str] = Field(None, max_length=255)
+    bio: Optional[str] = Field(None, max_length=1000)
+    date_of_birth: Optional[date] = Field(None, description="Date of birth")
+
+
 class RoleResponse(BaseModel):
     id: UUID
     name: str
@@ -201,6 +242,7 @@ class RoleResponse(BaseModel):
 
 class CurrentUserResponse(BaseModel):
     id: UUID
+    employee_id: Optional[str] = None
     email: EmailStr
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
@@ -306,6 +348,7 @@ class RefreshTokenResponse(BaseModel):
 
 class UserPublicResponse(BaseModel):
     id: UUID
+    employee_id: Optional[str] = None
     email: EmailStr
     full_name: Optional[str] = None
     phone_number: Optional[str] = None

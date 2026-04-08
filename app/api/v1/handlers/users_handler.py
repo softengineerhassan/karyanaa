@@ -71,6 +71,7 @@ class UsersHandler:
     
     @staticmethod
     def update_own_profile(
+        email: Optional[str] = Form(None),
         full_name: Optional[str] = Form(None),
         phone_number: Optional[str] = Form(None),
         location: Optional[str] = Form(None),
@@ -82,6 +83,8 @@ class UsersHandler:
     ):
         from datetime import date
         profile_data = {}
+        if email is not None:
+            profile_data["email"] = email
         if full_name is not None:
             profile_data["full_name"] = full_name
         if phone_number is not None:
@@ -98,6 +101,15 @@ class UsersHandler:
                 raise HTTPException(status_code=400, detail="date_of_birth must be in YYYY-MM-DD format")
 
         return UsersActions.update_own_profile(profile_data, profile_picture, current_user.id, session)
+
+    @staticmethod
+    def update_own_profile_json(
+        profile_payload: UserProfileUpdateRequest,
+        session: Session = Depends(get_db),
+        current_user = Depends(get_current_user),
+    ):
+        profile_data = profile_payload.model_dump(exclude_unset=True)
+        return UsersActions.update_own_profile(profile_data, None, current_user.id, session)
     
     @staticmethod
     def upload_profile_picture(

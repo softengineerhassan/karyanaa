@@ -12,6 +12,7 @@ from app.api.v1.schemas.auth_schema import (
     LogoutRequest,
     RegisterRequest,
     ChangePasswordRequest,
+    UpdateOwnProfileRequest,
     VerifyOTPRequest,
     ResendOTPRequest,
     ForgotPasswordRequest,
@@ -41,7 +42,7 @@ class AuthActions:
         
         try:
             response_data = await auth_service.login(
-                email=login_data.email,
+                employee_id=login_data.employee_id,
                 password=login_data.password,
                 device_id=login_data.device_id,
                 fcm_token=login_data.fcm_token,
@@ -109,7 +110,7 @@ class AuthActions:
         auth_service = AuthService(session)
         try:
             response_data = await auth_service.register_user(
-                email=register_data.email,
+                employee_id=register_data.employee_id,
                 password=register_data.password,
                 full_name=register_data.full_name,
                 phone_number=register_data.phone_number,
@@ -137,6 +138,8 @@ class AuthActions:
             return success_response(message="Password changed successfully")
         except InvalidCredentialsError as e:
             raise HTTPException(status_code=400, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     
     @staticmethod
     def get_current_user_profile(current_user_id: UUID, session: Session):
@@ -155,18 +158,40 @@ class AuthActions:
             raise HTTPException(status_code=404, detail="User profile not found")
 
     @staticmethod
+    async def update_own_profile(data: UpdateOwnProfileRequest, current_user_id: UUID, session: Session):
+        from app.services.user_service import UserService
+        from app.services.auth_service import AuthService
+
+        profile_data = data.model_dump(exclude_unset=True)
+
+        user_service = UserService(session)
+        updated_user = user_service.update_own_profile(current_user_id, profile_data, None)
+
+        if "email" in profile_data and profile_data["email"]:
+            auth_service = AuthService(session)
+            await auth_service.resend_verification_otp(str(updated_user.email))
+
+        return success_response(
+            data=updated_user,
+            message="Profile updated successfully"
+        )
+
+    @staticmethod
     async def forgot_password(data: ForgotPasswordRequest, session: Session):
         from app.services.auth_service import AuthService
         auth_service = AuthService(session)
-        await auth_service.request_password_reset(data.email)
-        return success_response(message="If an account exists, a reset code has been sent.")
+        try:
+            await auth_service.request_password_reset(data.employee_id)
+            return success_response(message="If an account exists, a reset code has been sent.")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     @staticmethod
     async def verify_reset_otp(data: VerifyResetOTPRequest, session: Session):
         from app.services.auth_service import AuthService
         auth_service = AuthService(session)
         try:
-            token = await auth_service.verify_reset_otp(data.email, data.code)
+            token = await auth_service.verify_reset_otp(data.employee_id, data.code)
             return success_response(
                 data=ResetOTPResponse(reset_token=token),
                 message="Reset code verified successfully"

@@ -10,33 +10,43 @@ from app.repos.user_repository import UserRepository
 from app.api.v1.mappers.user_mapper import map_user_to_user_response, map_user_to_current_user_response, map_user_to_user_detail_response
 from app.api.v1.schemas.user_schema import UserResponse, UserStats, UserDetailResponse
 from app.api.v1.schemas.auth_schema import CurrentUserResponse
-from app.models.role import Role, UserRole
-from app.repos.role_repository import RoleRepository
 from fastapi import HTTPException, status, UploadFile
 import uuid
-from app.services.s3_service import S3Service
 from app.utils.exceptions import (
     UserNotFoundError,
     UserAlreadyExistsError,
-    RoleNotFoundError,
 )
+from pydantic import EmailStr, TypeAdapter
 from app.models.user import User
-from app.repos.booking_repository import BookingRepository
+
+
+EMAIL_ADAPTER = TypeAdapter(EmailStr)
 
 class UserService:
     
     def __init__(self, session: Session):
         self.session = session
         self.user_repo = UserRepository(session)
+
+    def _get_completed_bookings_count(self, user_id: UUID) -> int:
+        try:
+            from app.repos.booking_repository import BookingRepository
+        except Exception:
+            return 0
+
+        try:
+            booking_repo = BookingRepository(self.session)
+            counts = booking_repo.get_user_bookings_count_by_status(user_id)
+            return counts.get("completed", 0)
+        except Exception:
+            return 0
     
     def get_user_by_id(self, user_id: UUID) -> CurrentUserResponse:
         user = self.user_repo.get_by_id(user_id)
         if not user:
             raise UserNotFoundError()
-        
-        booking_repo = BookingRepository(self.session)
-        counts = booking_repo.get_user_bookings_count_by_status(user_id)
-        total_valid_bookings = counts.get("completed", 0)
+
+        total_valid_bookings = self._get_completed_bookings_count(user_id)
         
         return map_user_to_current_user_response(user, bookings_count=total_valid_bookings, session=self.session)
     
@@ -45,7 +55,7 @@ class UserService:
         email: str,
         password: str,
         full_name: str,
-        role_id: UUID,
+        role_id: Optional[UUID],
         phone_number: Optional[str] = None,
         location: Optional[str] = None,
         is_active: bool = True,
@@ -53,10 +63,6 @@ class UserService:
     ) -> UserResponse:
         if self.user_repo.email_exists(email):
             raise UserAlreadyExistsError()
-        
-        role_repo = RoleRepository(self.session)
-        if not role_repo.exists(role_id):
-            raise RoleNotFoundError()
         
         security.validate_password_strength(password)
         hashed_password = security.hash_password(password)
@@ -70,15 +76,9 @@ class UserService:
             is_active=is_active,
             is_superuser=is_superuser,
         )
-        
+
         user = self.user_repo.create(user)
-        
-        user_role = UserRole(
-            user_id=user.id,
-            role_id=role_id
-        )
-        self.session.add(user_role)
-        
+
         self.session.commit()
         self.session.refresh(user)
         
@@ -94,21 +94,9 @@ class UserService:
             raise UserNotFoundError()
         
         
-        # Handle Role update if present
+        # Role model is not part of this trimmed codebase; ignore role updates if present.
         if "role_id" in update_data:
-            role_id = update_data.pop("role_id")
-            if role_id:
-                 role_repo = RoleRepository(self.session)
-                 if not role_repo.exists(role_id):
-                     raise RoleNotFoundError()
-                 
-                 # Remove existing roles (assuming single role policy for now)
-                 for ur in user_orm.user_roles:
-                     self.session.delete(ur)
-                 
-                 # Assign new role
-                 new_user_role = UserRole(user_id=user_id, role_id=role_id)
-                 self.session.add(new_user_role)
+            update_data.pop("role_id", None)
 
         user = self.user_repo.update(user_id, update_data)
         self.session.commit()
@@ -150,12 +138,8 @@ class UserService:
             elif status == UserStatusFilter.ALL:
                 active_filter = None  # Show all regardless of status
         
-        # Validate role_id if provided
-        if role_id is not None:
-            role_repo = RoleRepository(self.session)
-            role = role_repo.get_by_id(role_id, include_deleted=False)
-            if not role:
-                raise RoleNotFoundError(f"Role with ID '{role_id}' not found. Please provide a valid role ID.")
+        # Role filtering is unavailable in this codebase variant.
+        role_id = None
         
         users, total = self.user_repo.search_users(
             search=search,
@@ -179,11 +163,9 @@ class UserService:
             vendors=self.user_repo.count_vendors()
         )
         
-        booking_repo = BookingRepository(self.session)
         user_responses = []
         for user in users:
-            counts = booking_repo.get_user_bookings_count_by_status(user.id)
-            total_valid_bookings = counts.get("completed", 0)
+            total_valid_bookings = self._get_completed_bookings_count(user.id)
             user_responses.append(map_user_to_user_response(user, bookings_count=total_valid_bookings))
             
         return user_responses, total, stats
@@ -216,8 +198,40 @@ class UserService:
         if not user:
             raise UserNotFoundError()
 
+        if "email" in profile_data:
+            new_email = profile_data.get("email")
+            if new_email:
+                try:
+                    validated_email = str(EMAIL_ADAPTER.validate_python(str(new_email).strip()))
+                except Exception:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Invalid email format"
+                    )
+
+                if self.user_repo.email_exists(validated_email, exclude_user_id=user_id):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Email already registered"
+                    )
+
+                if user.email != validated_email:
+                    profile_data["email"] = validated_email
+                    profile_data["is_email_verified"] = False
+                    profile_data["email_verified_at"] = None
+            else:
+                profile_data.pop("email", None)
+
         if profile_picture:
             self._validate_image(profile_picture)
+
+            try:
+                from app.services.s3_service import S3Service
+            except Exception:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Profile picture upload service is not configured"
+                )
             
             ext = profile_picture.filename.split('.')[-1] if '.' in profile_picture.filename else 'jpg'
             s3_key = f"users/{user_id}/profile/{uuid.uuid4()}.{ext}"
@@ -231,9 +245,7 @@ class UserService:
         self.session.commit()
         self.session.refresh(updated_user)
         
-        booking_repo = BookingRepository(self.session)
-        counts = booking_repo.get_user_bookings_count_by_status(user_id)
-        total_valid_bookings = counts.get("completed", 0)
+        total_valid_bookings = self._get_completed_bookings_count(user_id)
         
         return map_user_to_current_user_response(updated_user, bookings_count=total_valid_bookings, session=self.session)
     

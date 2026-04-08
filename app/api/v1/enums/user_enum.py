@@ -16,6 +16,14 @@ class UserStatusFilter(str, Enum):
     ALL = "all"
 
 
+class UserSegment(str, Enum):
+    """Enum for filtering users by segment"""
+    NEW = "new"
+    ACTIVE = "active"
+    VIP = "vip"
+    ALL = "all"
+
+
 
 
 

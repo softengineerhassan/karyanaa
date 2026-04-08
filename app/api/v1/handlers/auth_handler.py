@@ -10,6 +10,7 @@ from app.api.v1.schemas.auth_schema import (
     LogoutRequest,
     RegisterRequest,
     ChangePasswordRequest,
+    UpdateOwnProfileRequest,
     VerifyOTPRequest,
     ResendOTPRequest,
     ForgotPasswordRequest,
@@ -79,6 +80,14 @@ class AuthHandler:
         current_user = Depends(get_current_user),
     ):
         return AuthActions.get_current_user_profile(current_user.id, session)
+
+    @staticmethod
+    async def update_own_profile(
+        profile_data: UpdateOwnProfileRequest,
+        session: Session = Depends(get_db),
+        current_user = Depends(get_current_user),
+    ):
+        return await AuthActions.update_own_profile(profile_data, current_user.id, session)
 
     @staticmethod
     async def forgot_password(

@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
+import hashlib
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -27,21 +28,38 @@ from app.utils.exceptions import (
 
 class AuthService:
 
+    PLACEHOLDER_EMAIL_DOMAIN = "employee.karyanaa.app"
+
     def __init__(self, session: Session):
         self.session = session
         self.user_repo = UserRepository(session)
         self.token_repo = TokenRepository(session)
 
+    def _placeholder_email_for_employee(self, employee_id: str) -> str:
+        # Keep internal email unique and deterministic without exposing business IDs as raw local-part.
+        digest = hashlib.sha1(employee_id.encode("utf-8")).hexdigest()
+        return f"emp_{digest}@{self.PLACEHOLDER_EMAIL_DOMAIN}"
+
+    def _has_profile_email(self, user: Any) -> bool:
+        if not user.email:
+            return False
+        email = str(user.email)
+        return not (
+            email.endswith(f"@{self.PLACEHOLDER_EMAIL_DOMAIN}")
+            or email.endswith("@employee.local")
+            or email.endswith("@employee.localhost")
+        )
+
     async def login(
         self, 
-        email: str, 
+        employee_id: str, 
         password: str, 
         device_id: Optional[str] = None,
         fcm_token: Optional[str] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> LoginResponse:
-        user = self.user_repo.get_by_email(email)
+        user = self.user_repo.get_by_employee_id(employee_id)
         if not user:
             raise InvalidCredentialsError()
 
@@ -56,7 +74,7 @@ class AuthService:
         if not user.is_active:
             raise UserInactiveError()
 
-        if not user.is_email_verified:
+        if self._has_profile_email(user) and not user.is_email_verified:
             # Automatically resend verification code
             await self.resend_verification_otp(user.email)
             raise EmailNotVerifiedError("Email not verified. A new verification code has been sent to your email.")
@@ -146,21 +164,24 @@ class AuthService:
 
     async def register_user(
         self,
-        email: str,
+        employee_id: str,
         password: str,
         full_name: str,
         phone_number: Optional[str] = None,
         role_id: Optional[UUID] = None,
         assigned_by: Optional[UUID] = None,
     ) -> RegisterResponse:
-        if self.user_repo.email_exists(email):
-             raise UserAlreadyExistsError("Email already exists")
+        if self.user_repo.employee_id_exists(employee_id):
+            raise UserAlreadyExistsError("Employee ID already exists")
+
+        resolved_email = self._placeholder_email_for_employee(employee_id)
 
         security.validate_password_strength(password)
         hashed_password = security.hash_password(password)
         
         user = self.user_repo.create({
-            "email": email,
+            "employee_id": employee_id,
+            "email": resolved_email,
             "hashed_password": hashed_password,
             "full_name": full_name,
             "phone_number": phone_number,
@@ -171,15 +192,13 @@ class AuthService:
         self.session.commit()
         self.session.refresh(user)
 
-        # Generate and Send OTP
-        await self._generate_and_send_otp(user)
-
         return RegisterResponse(
             user_id=user.id,
-            email=user.email,
+            employee_id=user.employee_id,
+            email=None,
             full_name=user.full_name or "",
             is_email_verified=user.is_email_verified,
-            message="Registration successful. Please check your email for the verification code.",
+            message="Registration successful. Please update your profile and add your email.",
         )
 
     async def verify_email_otp(self, email: str, code: str) -> bool:
@@ -222,19 +241,22 @@ class AuthService:
         await self._generate_and_send_otp(user)
         return True
 
-    async def request_password_reset(self, email: str) -> bool:
+    async def request_password_reset(self, employee_id: str) -> bool:
         """Step 1: Request password reset and send OTP"""
-        user = self.user_repo.get_by_email(email)
+        user = self.user_repo.get_by_employee_id(employee_id)
         if not user:
             # Mask user existence
             return True
 
+        if not self._has_profile_email(user):
+            raise ValueError("Please update your profile and add the email address first")
+
         await self._generate_and_send_otp(user, purpose="password_reset")
         return True
 
-    async def verify_reset_otp(self, email: str, code: str) -> str:
+    async def verify_reset_otp(self, employee_id: str, code: str) -> str:
         """Step 2: Verify reset OTP and return a reset token"""
-        user = self.user_repo.get_by_email(email)
+        user = self.user_repo.get_by_employee_id(employee_id)
         if not user:
             raise InvalidCredentialsError("Invalid or expired reset code")
 
@@ -334,6 +356,7 @@ class AuthService:
         token_data = {
             "sub": str(user.id),
             "email": user.email,
+            "employee_id": user.employee_id,
             "roles": [],
             "permissions": [],
             "is_email_verified": user.is_email_verified,
@@ -344,6 +367,9 @@ class AuthService:
         user = self.user_repo.get_by_id(user_id)
         if not user or not security.verify_password(current_password, user.hashed_password):
             raise InvalidCredentialsError("Current password is incorrect")
+
+        if not self._has_profile_email(user):
+            raise ValueError("Please update your profile and add the email address first")
 
         security.validate_password_strength(new_password)
         user.hashed_password = security.hash_password(new_password)

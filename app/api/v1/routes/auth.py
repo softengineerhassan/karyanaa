@@ -27,5 +27,6 @@ router.post("/forgot-password", response_model=StandardResponse[None], status_co
 router.post("/verify-reset-otp", response_model=StandardResponse[ResetOTPResponse], status_code=status.HTTP_200_OK)(AuthHandler.verify_reset_otp)
 router.post("/reset-password", response_model=StandardResponse[None], status_code=status.HTTP_200_OK)(AuthHandler.reset_password)
 router.get("/me", response_model=StandardResponse[CurrentUserResponse], status_code=status.HTTP_200_OK)(AuthHandler.get_current_user_profile)
+router.patch("/me/profile", response_model=StandardResponse[CurrentUserResponse], status_code=status.HTTP_200_OK)(AuthHandler.update_own_profile)
 router.get("/.well-known/jwks.json", response_model=JWKSResponse, status_code=status.HTTP_200_OK)(AuthHandler.get_jwks)
 router.get("/jwks.json", response_model=JWKSResponse, status_code=status.HTTP_200_OK, include_in_schema=False)(AuthHandler.get_jwks)

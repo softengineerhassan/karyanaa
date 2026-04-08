@@ -19,6 +19,11 @@ class UserRepository(GenericRepository[User]):
         result = self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    def get_by_employee_id(self, employee_id: str) -> User | None:
+        stmt = select(User).where(User.employee_id == employee_id)
+        result = self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     def email_exists(
         self,
         email: str,
@@ -27,6 +32,24 @@ class UserRepository(GenericRepository[User]):
         query = select(User.id).where(
             and_(
                 User.email == email,
+                User.deleted_at.is_(None)
+            )
+        )
+
+        if exclude_user_id:
+            query = query.where(User.id != exclude_user_id)
+
+        result = self.session.execute(query)
+        return result.scalar_one_or_none() is not None
+
+    def employee_id_exists(
+        self,
+        employee_id: str,
+        exclude_user_id: Optional[UUID] = None,
+    ) -> bool:
+        query = select(User.id).where(
+            and_(
+                User.employee_id == employee_id,
                 User.deleted_at.is_(None)
             )
         )
