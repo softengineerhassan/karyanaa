@@ -130,7 +130,7 @@ class DashboardActions:
         metrics = [
             DashboardMetric(
                 label="Total Sales",
-                value=f"AED {Decimal(str(total_sales or 0)):,.2f}",
+                value=f"PKR {Decimal(str(total_sales or 0)):,.2f}",
                 meta="All posted sales",
             ),
             DashboardMetric(

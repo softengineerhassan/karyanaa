@@ -9,7 +9,7 @@ def format_number_k_m(n: int) -> str:
     return str(n)
 
 def format_currency(amount: float) -> str:
-    """Format amount like 500.0 to '$500'."""
+    """Format amount like 500.0 to 'PKR 500'."""
     if amount == int(amount):
-        return f"${int(amount)}"
-    return f"${amount:.2f}"
+        return f"PKR {int(amount)}"
+    return f"PKR {amount:.2f}"

@@ -160,7 +160,7 @@ class AuthService:
         self,
         employee_id: str,
         password: str,
-        full_name: str,
+        full_name: Optional[str] = None,
         phone_number: Optional[str] = None,
         role_id: Optional[UUID] = None,
         assigned_by: Optional[UUID] = None,

@@ -89,7 +89,7 @@ class LogoutRequest(BaseModel):
 class RegisterRequest(BaseModel):
     employee_id: str = Field(..., max_length=10, description="Employee ID")
     password: str = Field(..., min_length=8, description="User password")
-    full_name: str = Field(..., min_length=2, max_length=255, description="User full name")
+    full_name: Optional[str] = Field(None, max_length=255, description="User full name (optional)")
     phone_number: Optional[str] = Field(None, max_length=20, description="User phone number")
     
     @field_validator('password')
@@ -98,6 +98,18 @@ class RegisterRequest(BaseModel):
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
         return v
+
+    @field_validator('full_name')
+    @classmethod
+    def validate_full_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        normalized = v.strip()
+        if normalized == "":
+            return None
+        if len(normalized) < 2:
+            raise ValueError("Full name is too short")
+        return normalized
 
     @field_validator("employee_id")
     @classmethod
@@ -117,7 +129,6 @@ class RegisterRequest(BaseModel):
             "example": {
                 "employee_id": "AB1#X9",
                 "password": "SecurePass123!",
-                "full_name": "John Doe",
                 "phone_number": "+1234567890"
             }
         }
@@ -250,7 +261,7 @@ class CurrentUserResponse(BaseModel):
     actions_taken: int = 0
     time_active: str = "0h"
     approvals: int = 0
-    revenue_impact: str = "AED 0"
+    revenue_impact: str = "PKR 0"
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -269,7 +280,7 @@ class CurrentUserResponse(BaseModel):
                 "actions_taken": 0,
                 "time_active": "2h",
                 "approvals": 0,
-                "revenue_impact": "AED 0.0"
+                "revenue_impact": "PKR 0.0"
             }
         },
     )

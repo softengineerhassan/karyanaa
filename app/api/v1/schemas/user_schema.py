@@ -203,7 +203,7 @@ class CurrentUserResponse(BaseModel):
     actions_taken: int = 0
     time_active: str = "0h"
     approvals: int = 0
-    revenue_impact: str = "AED 0"
+    revenue_impact: str = "PKR 0"
     
     recent_activities: List[RecentActivity] = Field(default_factory=list)
 

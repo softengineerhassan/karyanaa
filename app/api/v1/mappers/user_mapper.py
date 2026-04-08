@@ -202,5 +202,5 @@ def map_user_to_current_user_response(user: User, bookings_count: int = 0, sessi
         actions_taken=actions_taken,
         time_active=time_active_str,
         approvals=approvals,
-        revenue_impact=f"+AED {revenue_impact:,.1f}" if revenue_impact > 0 else f"AED {revenue_impact:,.1f}",
+        revenue_impact=f"+PKR {revenue_impact:,.1f}" if revenue_impact > 0 else f"PKR {revenue_impact:,.1f}",
     )
