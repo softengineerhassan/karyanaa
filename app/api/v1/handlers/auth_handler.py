@@ -67,6 +67,13 @@ class AuthHandler:
         return await AuthActions.resend_otp(resend_data, session)
 
     @staticmethod
+    async def send_verification_otp(
+        resend_data: ResendOTPRequest,
+        session: Session = Depends(get_db),
+    ):
+        return await AuthActions.send_verification_otp(resend_data, session)
+
+    @staticmethod
     def change_password(
         change_data: ChangePasswordRequest,
         session: Session = Depends(get_db),

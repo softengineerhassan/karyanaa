@@ -91,6 +91,16 @@ class AuthActions:
             return success_response(message="Verification code resent successfully")
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
+
+    @staticmethod
+    async def send_verification_otp(data: ResendOTPRequest, session: Session):
+        from app.services.auth_service import AuthService
+        auth_service = AuthService(session)
+        try:
+            await auth_service.send_verification_otp(email=data.email)
+            return success_response(message="Verification code sent successfully")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
     
     @staticmethod
     def logout(logout_data: LogoutRequest, current_user_id: UUID, session: Session):

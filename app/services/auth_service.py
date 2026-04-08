@@ -235,6 +235,9 @@ class AuthService:
         await self._generate_and_send_otp(user)
         return True
 
+    async def send_verification_otp(self, email: str) -> bool:
+        return await self.resend_verification_otp(email)
+
     async def request_password_reset(self, email: str) -> bool:
         """Step 1: Request password reset and send OTP"""
         user = self.user_repo.get_by_email(email)

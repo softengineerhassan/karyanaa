@@ -19,7 +19,17 @@ class EmailService:
             f"{otp_code}\n\n"
             f"This code expires in {settings.EMAIL_VERIFICATION_EXPIRE_HOURS} hour(s)."
         )
-        await EmailService._send_email(email, subject, body)
+                html = f"""
+                <div style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.5;">
+                    <h2 style="margin: 0 0 12px; font-size: 24px;">Verify your email</h2>
+                    <p style="margin: 0 0 16px;">Use the code below to verify your email address.</p>
+                    <div style="display: inline-block; padding: 18px 24px; border-radius: 16px; background: #f3f4f6; border: 1px solid #d1d5db;">
+                        <div style="font-size: 38px; font-weight: 800; letter-spacing: 10px; font-family: 'Courier New', monospace;">{otp_code}</div>
+                    </div>
+                    <p style="margin: 16px 0 0; color: #4b5563;">This code expires in {settings.EMAIL_VERIFICATION_EXPIRE_HOURS} hour(s).</p>
+                </div>
+                """
+                await EmailService._send_email(email, subject, body, html_body=html)
 
     @staticmethod
     async def send_password_reset_email(email: str, otp_code: str) -> None:
@@ -29,7 +39,17 @@ class EmailService:
             f"{otp_code}\n\n"
             f"This code expires in {settings.PASSWORD_RESET_EXPIRE_HOURS} hour(s)."
         )
-        await EmailService._send_email(email, subject, body)
+                html = f"""
+                <div style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.5;">
+                    <h2 style="margin: 0 0 12px; font-size: 24px;">Reset your password</h2>
+                    <p style="margin: 0 0 16px;">Use the code below to continue password recovery.</p>
+                    <div style="display: inline-block; padding: 18px 24px; border-radius: 16px; background: #f3f4f6; border: 1px solid #d1d5db;">
+                        <div style="font-size: 38px; font-weight: 800; letter-spacing: 10px; font-family: 'Courier New', monospace;">{otp_code}</div>
+                    </div>
+                    <p style="margin: 16px 0 0; color: #4b5563;">This code expires in {settings.PASSWORD_RESET_EXPIRE_HOURS} hour(s).</p>
+                </div>
+                """
+                await EmailService._send_email(email, subject, body, html_body=html)
 
     @staticmethod
     async def send_rider_purchase_invoice_email(
@@ -56,6 +76,7 @@ class EmailService:
         to_email: str,
         subject: str,
         body: str,
+        html_body: Optional[str] = None,
         attachments: Optional[Sequence[Tuple[str, bytes, str, str]]] = None,
     ) -> None:
         if not settings.SMTP_HOST:
@@ -71,6 +92,8 @@ class EmailService:
         message["To"] = to_email
         message["Subject"] = subject
         message.set_content(body)
+        if html_body:
+            message.add_alternative(html_body, subtype="html")
 
         for attachment in attachments or []:
             filename, content, maintype, subtype = attachment

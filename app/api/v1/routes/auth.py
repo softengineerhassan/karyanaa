@@ -21,6 +21,7 @@ router.post("/logout", response_model=StandardResponse[None], status_code=status
 router.post("/register", response_model=StandardResponse[RegisterResponse], status_code=status.HTTP_201_CREATED)(AuthHandler.register)
 router.post("/verify-otp", response_model=StandardResponse[None], status_code=status.HTTP_200_OK)(AuthHandler.verify_otp)
 router.post("/resend-otp", response_model=StandardResponse[None], status_code=status.HTTP_200_OK)(AuthHandler.resend_otp)
+router.post("/send-verification-otp", response_model=StandardResponse[None], status_code=status.HTTP_200_OK)(AuthHandler.send_verification_otp)
 router.post("/change-password", response_model=StandardResponse[None], status_code=status.HTTP_200_OK)(AuthHandler.change_password)
 
 router.post("/forgot-password", response_model=StandardResponse[None], status_code=status.HTTP_200_OK)(AuthHandler.forgot_password)
