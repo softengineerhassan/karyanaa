@@ -1,7 +1,7 @@
-import uuid
+﻿import uuid
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.rider_profile import RiderProfile
@@ -20,7 +20,7 @@ class RiderProfileRepository(GenericRepository[RiderProfile]):
         )
         return self.session.execute(query).scalar_one_or_none()
 
-    def list_by_owner(self, owner_user_id: uuid.UUID) -> List[RiderProfile]:
+    def list_by_owner(self, owner_user_id: uuid.UUID, search: Optional[str] = None) -> List[RiderProfile]:
         query = (
             select(RiderProfile)
             .where(
@@ -29,6 +29,17 @@ class RiderProfileRepository(GenericRepository[RiderProfile]):
             )
             .order_by(RiderProfile.created_at.desc())
         )
+
+        if search:
+            search_term = f"%{search.strip()}%"
+            query = query.where(
+                or_(
+                    RiderProfile.full_name.ilike(search_term),
+                    RiderProfile.phone_number.ilike(search_term),
+                    RiderProfile.email.ilike(search_term),
+                )
+            )
+
         return list(self.session.execute(query).scalars().all())
 
     def exists_phone_for_owner(self, owner_user_id: uuid.UUID, phone_number: str, excluded_id: Optional[uuid.UUID] = None) -> bool:

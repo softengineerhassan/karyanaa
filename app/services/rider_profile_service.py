@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -32,8 +32,8 @@ class RiderProfileService:
             }
         )
 
-    def list_riders(self, owner_user_id: uuid.UUID) -> List[RiderProfile]:
-        return self.rider_repo.list_by_owner(owner_user_id)
+    def list_riders(self, owner_user_id: uuid.UUID, search: Optional[str] = None) -> List[RiderProfile]:
+        return self.rider_repo.list_by_owner(owner_user_id, search=search)
 
     def get_rider(self, owner_user_id: uuid.UUID, rider_id: uuid.UUID) -> Optional[RiderProfile]:
         return self.rider_repo.get_by_owner_and_id(owner_user_id, rider_id)
