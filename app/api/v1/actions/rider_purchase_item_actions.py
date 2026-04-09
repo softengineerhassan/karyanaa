@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 from uuid import UUID
 
@@ -25,10 +26,23 @@ class RiderPurchaseItemActions:
         return success_response(data=RiderPurchaseItemResponse.model_validate(item), message="Rider purchase item created successfully")
 
     @staticmethod
-    def list_items(session: Session, current_user: User, rider_profile_id: Optional[UUID] = None):
+    def list_items(
+        session: Session,
+        current_user: User,
+        search: Optional[str] = None,
+        rider_profile_id: Optional[UUID] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ):
         service = RiderPurchaseItemService(session)
         try:
-            items = service.list_items(current_user.id, rider_profile_id=rider_profile_id)
+            items = service.list_items(
+                current_user.id,
+                search=search,
+                rider_profile_id=rider_profile_id,
+                start_date=start_date,
+                end_date=end_date,
+            )
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 

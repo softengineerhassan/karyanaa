@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional
 from uuid import UUID
 
@@ -22,11 +23,21 @@ class RiderPurchaseItemHandler:
 
     @staticmethod
     def list_items(
+        search: Optional[str] = Query(None, description="Search by rider name or item name"),
         rider_profile_id: Optional[UUID] = Query(None),
+        start_date: Optional[date] = Query(None, description="Filter by purchase date from"),
+        end_date: Optional[date] = Query(None, description="Filter by purchase date to"),
         session: Session = Depends(get_db),
         current_user: User = Depends(get_current_user),
     ):
-        return RiderPurchaseItemActions.list_items(session, current_user, rider_profile_id=rider_profile_id)
+        return RiderPurchaseItemActions.list_items(
+            session,
+            current_user,
+            search=search,
+            rider_profile_id=rider_profile_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
     @staticmethod
     def get_item(

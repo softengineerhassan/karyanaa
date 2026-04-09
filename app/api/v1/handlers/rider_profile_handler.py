@@ -1,6 +1,8 @@
+from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends
+from fastapi import Query
 from sqlalchemy.orm import Session
 
 from app.api.v1.actions.rider_profile_actions import RiderProfileActions
@@ -21,10 +23,11 @@ class RiderProfileHandler:
 
     @staticmethod
     def list_riders(
+        search: Optional[str] = Query(None, description="Search by rider name"),
         session: Session = Depends(get_db),
         current_user: User = Depends(get_current_user),
     ):
-        return RiderProfileActions.list_riders(session, current_user)
+        return RiderProfileActions.list_riders(search, session, current_user)
 
     @staticmethod
     def get_rider(

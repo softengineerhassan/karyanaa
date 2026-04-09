@@ -1,10 +1,12 @@
 import uuid
+from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.rider_purchase_item import RiderPurchaseItem
+from app.models.rider_profile import RiderProfile
 from app.repos.base import GenericRepository
 
 
@@ -24,13 +26,33 @@ class RiderPurchaseItemRepository(GenericRepository[RiderPurchaseItem]):
         self,
         owner_user_id: uuid.UUID,
         rider_profile_id: Optional[uuid.UUID] = None,
+        search: Optional[str] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
     ) -> List[RiderPurchaseItem]:
-        query = select(RiderPurchaseItem).where(
+        query = select(RiderPurchaseItem).join(RiderProfile, RiderPurchaseItem.rider_profile_id == RiderProfile.id).where(
             RiderPurchaseItem.owner_user_id == owner_user_id,
             RiderPurchaseItem.deleted_at.is_(None),
+            RiderProfile.deleted_at.is_(None),
         )
+
         if rider_profile_id is not None:
             query = query.where(RiderPurchaseItem.rider_profile_id == rider_profile_id)
+
+        if search:
+            search_term = f"%{search.strip()}%"
+            query = query.where(
+                or_(
+                    RiderProfile.full_name.ilike(search_term),
+                    RiderPurchaseItem.item_name.ilike(search_term),
+                )
+            )
+
+        if start_date is not None:
+            query = query.where(RiderPurchaseItem.purchase_date >= start_date)
+
+        if end_date is not None:
+            query = query.where(RiderPurchaseItem.purchase_date <= end_date)
 
         query = query.order_by(RiderPurchaseItem.purchase_date.desc(), RiderPurchaseItem.created_at.desc())
         return list(self.session.execute(query).scalars().all())

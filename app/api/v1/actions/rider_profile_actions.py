@@ -24,9 +24,9 @@ class RiderProfileActions:
         return success_response(data=RiderProfileResponse.model_validate(rider), message="Rider profile created successfully")
 
     @staticmethod
-    def list_riders(session: Session, current_user: User):
+    def list_riders(search: str | None, session: Session, current_user: User):
         service = RiderProfileService(session)
-        riders = service.list_riders(current_user.id)
+        riders = service.list_riders(current_user.id, search=search)
         data = [RiderProfileResponse.model_validate(item) for item in riders]
         return success_response(data=data, message="Rider profiles fetched successfully")
 

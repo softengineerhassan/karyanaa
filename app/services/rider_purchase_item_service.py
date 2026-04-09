@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import date, datetime
 from io import BytesIO
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
@@ -259,10 +259,23 @@ class RiderPurchaseItemService:
         self._send_invoice_email(owner_user_id, item)
         return item
 
-    def list_items(self, owner_user_id: uuid.UUID, rider_profile_id: Optional[uuid.UUID] = None) -> List[RiderPurchaseItem]:
+    def list_items(
+        self,
+        owner_user_id: uuid.UUID,
+        search: Optional[str] = None,
+        rider_profile_id: Optional[uuid.UUID] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ) -> List[RiderPurchaseItem]:
         if rider_profile_id is not None:
             self._assert_rider_belongs_to_owner(owner_user_id, rider_profile_id)
-        return self.item_repo.list_by_owner(owner_user_id, rider_profile_id=rider_profile_id)
+        return self.item_repo.list_by_owner(
+            owner_user_id,
+            rider_profile_id=rider_profile_id,
+            search=search,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
     def get_item(self, owner_user_id: uuid.UUID, item_id: uuid.UUID) -> Optional[RiderPurchaseItem]:
         return self.item_repo.get_by_owner_and_id(owner_user_id, item_id)
