@@ -117,10 +117,14 @@ class ProductResponse(BaseModel):
     sku: Optional[str] = None
     barcode: Optional[str] = None
     category_id: UUID
+    category_name: Optional[str] = None
     brand_id: Optional[UUID] = None
     unit_id: UUID
+    unit_name: Optional[str] = None
     purchase_unit_id: Optional[UUID] = None
+    purchase_unit_name: Optional[str] = None
     sales_unit_id: Optional[UUID] = None
+    sales_unit_name: Optional[str] = None
     product_type: str
     track_inventory: bool
     has_expiry: bool

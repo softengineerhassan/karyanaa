@@ -1,9 +1,11 @@
 import re
+from datetime import date
+from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.v1.schemas.inventory_schema import (
     CategoryCreateRequest,
@@ -147,9 +149,64 @@ class InventoryService:
             }
         )
 
-    def list_products(self, is_active: Optional[bool] = None) -> List[Product]:
-        filters = {} if is_active is None else {"is_active": is_active}
-        return self.product_repo.get_all(filters=filters, order_by="name")
+    def list_products(
+        self,
+        is_active: Optional[bool] = None,
+        search: Optional[str] = None,
+        category: Optional[str] = None,
+        unit: Optional[str] = None,
+        min_price: Optional[Decimal] = None,
+        max_price: Optional[Decimal] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ) -> List[Product]:
+        query = (
+            self.session.query(Product)
+            .outerjoin(Category, Product.category_id == Category.id)
+            .outerjoin(Unit, Product.unit_id == Unit.id)
+            .options(
+                joinedload(Product.category),
+                joinedload(Product.unit),
+                joinedload(Product.purchase_unit),
+                joinedload(Product.sales_unit),
+            )
+            .filter(Product.deleted_at.is_(None))
+        )
+
+        if is_active is not None:
+            query = query.filter(Product.is_active == is_active)
+
+        if search:
+            term = f"%{search.strip().lower()}%"
+            query = query.filter(
+                or_(
+                    func.lower(Product.name).like(term),
+                    func.lower(func.coalesce(Product.sku, "")).like(term),
+                    func.lower(func.coalesce(Product.barcode, "")).like(term),
+                    func.lower(func.coalesce(Category.name, "")).like(term),
+                    func.lower(func.coalesce(Unit.name, "")).like(term),
+                )
+            )
+
+        if category:
+            query = query.filter(func.lower(func.coalesce(Category.name, "")) == category.strip().lower())
+
+        if unit:
+            query = query.filter(func.lower(func.coalesce(Unit.name, "")) == unit.strip().lower())
+
+        if min_price is not None:
+            query = query.filter(Product.default_selling_price >= min_price)
+
+        if max_price is not None:
+            query = query.filter(Product.default_selling_price <= max_price)
+
+        if start_date:
+            query = query.filter(func.date(Product.created_at) >= start_date)
+
+        if end_date:
+            query = query.filter(func.date(Product.created_at) <= end_date)
+
+        return query.order_by(Product.name.asc()).all()
 
     def get_product(self, product_id: UUID) -> Optional[Product]:
         return self.product_repo.get_by_id(product_id)

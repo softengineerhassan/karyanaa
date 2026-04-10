@@ -1,3 +1,5 @@
+from datetime import date
+from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
@@ -21,6 +23,18 @@ from app.services.inventory_service import InventoryService
 
 
 class InventoryActions:
+    @staticmethod
+    def _product_response(product) -> ProductResponse:
+        return ProductResponse.model_validate(
+            {
+                **product.__dict__,
+                "category_name": product.category.name if getattr(product, "category", None) else None,
+                "unit_name": product.unit.name if getattr(product, "unit", None) else None,
+                "purchase_unit_name": product.purchase_unit.name if getattr(product, "purchase_unit", None) else None,
+                "sales_unit_name": product.sales_unit.name if getattr(product, "sales_unit", None) else None,
+            }
+        )
+
     @staticmethod
     def create_category(payload: CategoryCreateRequest, session: Session, current_user: User):
         service = InventoryService(session)
@@ -104,12 +118,35 @@ class InventoryActions:
             product = service.create_product(payload)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-        return success_response(data=ProductResponse.model_validate(product), message="Product created successfully")
+        return success_response(data=InventoryActions._product_response(product), message="Product created successfully")
 
     @staticmethod
-    def list_products(session: Session, current_user: User, is_active: Optional[bool] = None):
+    def list_products(
+        session: Session,
+        current_user: User,
+        is_active: Optional[bool] = None,
+        search: Optional[str] = None,
+        category: Optional[str] = None,
+        unit: Optional[str] = None,
+        min_price: Optional[Decimal] = None,
+        max_price: Optional[Decimal] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ):
         service = InventoryService(session)
-        data = [ProductResponse.model_validate(item) for item in service.list_products(is_active=is_active)]
+        data = [
+            InventoryActions._product_response(item)
+            for item in service.list_products(
+                is_active=is_active,
+                search=search,
+                category=category,
+                unit=unit,
+                min_price=min_price,
+                max_price=max_price,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        ]
         return success_response(data=data, message="Products fetched successfully")
 
     @staticmethod
@@ -118,7 +155,7 @@ class InventoryActions:
         product = service.get_product(product_id)
         if not product:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-        return success_response(data=ProductResponse.model_validate(product), message="Product fetched successfully")
+        return success_response(data=InventoryActions._product_response(product), message="Product fetched successfully")
 
     @staticmethod
     def update_product(product_id: UUID, payload: ProductUpdateRequest, session: Session, current_user: User):
@@ -129,7 +166,7 @@ class InventoryActions:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
         if not product:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-        return success_response(data=ProductResponse.model_validate(product), message="Product updated successfully")
+        return success_response(data=InventoryActions._product_response(product), message="Product updated successfully")
 
     @staticmethod
     def delete_product(product_id: UUID, session: Session, current_user: User):

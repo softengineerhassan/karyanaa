@@ -18,8 +18,9 @@ from app.api.v1.schemas.sales_schema import (
     PrintableInvoiceResponse,
 )
 from app.api.v1.schemas.common_schema import StandardResponse
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.core.response import success_response
+from app.models.user import User
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
@@ -94,10 +95,11 @@ def update_customer(
 def create_sale(
     req: SaleCreateRequest,
     handler: SalesHandler = Depends(get_sales_handler),
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new sale."""
     try:
-        sale = handler.handle_create_sale(req)
+        sale = handler.handle_create_sale(req, created_by=current_user.id)
         return success_response(data=sale, message="Sale created successfully")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

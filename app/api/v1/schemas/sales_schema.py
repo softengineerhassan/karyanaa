@@ -224,9 +224,12 @@ class PrintableInvoiceResponse(BaseModel):
     sale_number: str
     invoice_number: Optional[str]
     sale_date: date
+    transaction_datetime: Optional[datetime] = None
     status: str
     payment_status: str
     payment_method: str
+    cashier_id: Optional[UUID] = None
+    cashier_name: Optional[str] = None
 
     customer: InvoiceCustomerResponse
     items: List[InvoiceItemResponse]

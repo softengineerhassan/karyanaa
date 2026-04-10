@@ -21,6 +21,7 @@ from app.models.sales import (
     SaleItemBatchAllocation,
     SalePayment,
 )
+from app.models.user import User
 from app.repos.sales_repository import (
     CustomerRepository,
     SaleItemBatchAllocationRepository,
@@ -410,6 +411,16 @@ class SalesService:
         if not sale:
             raise ValueError("Sale not found")
 
+        cashier_name: Optional[str] = None
+        if sale.created_by:
+            cashier = (
+                self.session.query(User)
+                .filter(User.id == sale.created_by, User.deleted_at.is_(None))
+                .first()
+            )
+            if cashier:
+                cashier_name = cashier.full_name or cashier.email
+
         items = []
         for item in sale.items or []:
             items.append(
@@ -442,9 +453,12 @@ class SalesService:
             "sale_number": sale.sale_number,
             "invoice_number": sale.invoice_number,
             "sale_date": sale.sale_date,
+            "transaction_datetime": sale.created_at,
             "status": sale.status,
             "payment_status": sale.payment_status,
             "payment_method": sale.payment_method,
+            "cashier_id": sale.created_by,
+            "cashier_name": cashier_name,
             "customer": {
                 "id": sale.customer.id,
                 "name": sale.customer.name,

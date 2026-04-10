@@ -1,3 +1,5 @@
+from datetime import date
+from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
@@ -112,10 +114,28 @@ class InventoryHandler:
     @staticmethod
     def list_products(
         is_active: Optional[bool] = Query(None),
+        search: Optional[str] = Query(None),
+        category: Optional[str] = Query(None),
+        unit: Optional[str] = Query(None),
+        min_price: Optional[Decimal] = Query(None),
+        max_price: Optional[Decimal] = Query(None),
+        start_date: Optional[date] = Query(None),
+        end_date: Optional[date] = Query(None),
         session: Session = Depends(get_db),
         current_user: User = Depends(get_current_user),
     ):
-        return InventoryActions.list_products(session, current_user, is_active=is_active)
+        return InventoryActions.list_products(
+            session,
+            current_user,
+            is_active=is_active,
+            search=search,
+            category=category,
+            unit=unit,
+            min_price=min_price,
+            max_price=max_price,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
     @staticmethod
     def get_product(
