@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 from app.core.config import settings
 from app.core.logging_config import get_logger, setup_logging
@@ -141,7 +142,7 @@ async def auth_service_exception_handler(request: Request, exc: AuthServiceExcep
         content={
             "success": False,
             "message": exc.message,
-            "details": exc.details
+            "details": jsonable_encoder(exc.details)
         }
     )
 
@@ -159,7 +160,7 @@ async def general_exception_handler(request: Request, exc: Exception):
         content={
             "success": False,
             "message": "An unexpected error occurred",
-            "details": {"error": str(exc)} if settings.DEBUG else {}
+            "details": jsonable_encoder({"error": str(exc)}) if settings.DEBUG else {}
         }
     )
 

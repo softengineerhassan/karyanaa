@@ -1,6 +1,7 @@
 
 from typing import Any, Optional, Dict
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 
 def success_response(
@@ -14,9 +15,9 @@ def success_response(
     }
     
     if data is not None:
-        response["data"] = data
+        response["data"] = jsonable_encoder(data)
     
-    return response
+    return jsonable_encoder(response)
 
 
 def error_response(
@@ -30,9 +31,9 @@ def error_response(
     }
     
     if details:
-        response["details"] = details
+        response["details"] = jsonable_encoder(details)
     
-    return response
+    return jsonable_encoder(response)
 
 
 def paginated_response(
@@ -59,6 +60,7 @@ def paginated_response(
     }
     
     if stats is not None:
-        response["stats"] = stats
+        response["stats"] = jsonable_encoder(stats)
+    response["data"] = jsonable_encoder(items)
         
-    return response
+    return jsonable_encoder(response)
